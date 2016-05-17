@@ -66,7 +66,7 @@ angular.module('mm.core')
     };
 
     this.$get = function($ionicLoading, $ionicPopup, $injector, $translate, $http, $log, $q, $mmLang, $mmFS, $timeout, $mmApp,
-                $mmText, mmCoreWifiDownloadThreshold, mmCoreDownloadThreshold) {
+                $mmText, mmCoreWifiDownloadThreshold, mmCoreDownloadThreshold, $ionicScrollDelegate, $ionicPosition) {
 
         $log = $log.getInstance('$mmUtil');
 
@@ -754,6 +754,22 @@ angular.module('mm.core')
         };
 
         /**
+         * Removes all properties from an object without losing its reference.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#emptyObject
+         * @param {Object} object Object to remove the properties.
+         */
+        self.emptyObject = function(object) {
+            for (var key in object) {
+                if (object.hasOwnProperty(key)) {
+                    delete object[key];
+                }
+            }
+        };
+
+        /**
          * Similar to $q.all, but if a promise fails this function's promise won't be rejected until ALL promises have finished.
          *
          * @module mm.core
@@ -983,6 +999,133 @@ angular.module('mm.core')
             });
 
             return div.html();
+        };
+
+
+        /**
+         * Returns the contents of a certain selection in a DOM element.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#getContentsOfElement
+         * @param  {Object} element  DOM element to search in.
+         * @param  {String} selector Selector to search.
+         * @return {String}          Selection contents.
+         */
+        self.getContentsOfElement = function(element, selector) {
+            if (element) {
+                var el = element[0] || element, // Convert from jqLite to plain JS if needed.
+                    selected = el.querySelector(selector);
+                if (selected) {
+                    return selected.innerHTML;
+                }
+            }
+            return '';
+        };
+
+        /**
+         * Search and remove a certain element from inside another element.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#removeElement
+         * @param  {Object} element  DOM element to search in.
+         * @param  {String} selector Selector to search.
+         * @return {Void}
+         */
+        self.removeElement = function(element, selector) {
+            if (element) {
+                var el = element[0] || element, // Convert from jqLite to plain JS if needed.
+                    selected = el.querySelector(selector);
+                if (selected) {
+                    selected.remove();
+                }
+            }
+        };
+
+        /**
+         * Search and remove a certain element from an HTML code.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#removeElementFromHtml
+         * @param  {String} html       HTML code to change.
+         * @param  {String} selector   Selector to search.
+         * @param  {Boolean} removeAll True if it should remove all matches found, false if it should only remove the first one.
+         * @return {String}            HTML without the element.
+         */
+        self.removeElementFromHtml = function(html, selector, removeAll) {
+            // Create a fake div element so we can search using querySelector.
+            var div = document.createElement('div'),
+                selected;
+
+            div.innerHTML = html;
+
+            if (removeAll) {
+                selected = div.querySelectorAll(selector);
+                angular.forEach(selected, function(el) {
+                    el.remove();
+                });
+            } else {
+                selected = div.querySelector(selector);
+                if (selected) {
+                    selected.remove();
+                }
+            }
+
+            return div.innerHTML;
+        };
+
+        /**
+         * Search for certain classes in an element contents and replace them with the specified new values.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#replaceClassesInElement
+         * @param  {Object} element DOM element.
+         * @param  {Object} map     Mapping of the classes to replace. Keys must be the value to replace, values must be
+         *                          the new class name. Example: {'correct': 'mm-question-answer-correct'}.
+         * @return {Void}
+         */
+        self.replaceClassesInElement = function(element, map) {
+            element = element[0] || element; // Convert from jqLite to plain JS if needed.
+
+            angular.forEach(map, function(newValue, toReplace) {
+                var matches = element.querySelectorAll('.' + toReplace);
+                angular.forEach(matches, function(element) {
+                    element.className = element.className.replace(toReplace, newValue);
+                });
+            });
+        };
+
+        /**
+         * Scroll to a certain element inside another element.
+         *
+         * @module mm.core
+         * @ngdoc method
+         * @name $mmUtil#scrollToElement
+         * @param  {Object} container        Element to search in.
+         * @param  {String} [selector]       Selector to find the element to scroll to. If not defined, scroll to the container.
+         * @param  {Object} [scrollDelegate] Scroll delegate. If not defined, use $ionicScrollDelegate.
+         * @return {Boolean}                 True if the element is found, false otherwise.
+         */
+        self.scrollToElement = function(container, selector, scrollDelegate) {
+            if (!scrollDelegate) {
+                scrollDelegate = $ionicScrollDelegate;
+            }
+
+            var element = selector ? container.querySelector(selector) : container,
+                position;
+            if (element) {
+                element = angular.element(element); // Convert it to a jqLite element.
+                position = $ionicPosition.position(element);
+                if (position) {
+                    scrollDelegate.scrollTo(position.left, position.top);
+                    return true;
+                }
+            }
+
+            return false;
         };
 
         return self;
